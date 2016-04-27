@@ -1,0 +1,114 @@
+---
+title: "Depth filtering"
+author: "Brian J. Knaus"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+In a previous session we filtered our GBS data based on missingness.
+First, samples with a high degree of missingness were identified and removed from the data set.
+Second, variants that had a high degree of missingness were identified and removed.
+Here we identify variants with unusual coverage and remove them.
+
+
+This is adapted from a package vignette that uses genomic data.
+Here we use GBS data.
+
+
+```{r, eval=FALSE}
+browseVignettes('vcfR')
+vignette(package="vcfR", topic = "sequence_coverage")
+```
+
+
+## Data import
+
+
+```{r, results='hide'}
+library(vcfR)
+vcf <- read.vcfR('TASSEL_GBS0077_filtered.vcf.gz')
+```
+
+
+```{r}
+vcf
+head(vcf)
+```
+
+
+## Extract Depth Data (DP)
+
+
+```{r}
+dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+```
+
+
+Once we have extracted the quantile information we can use apply and quantile to build intervals for what we may consider acceptable coverage.
+
+
+```{r}
+quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.9), na.rm=TRUE)
+quants[,1:17]
+```
+
+
+We can now use these thresholds to censor data outside this threshold.
+
+
+```{r}
+dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[1,])
+dp[dp2 < 0] <- NA
+
+dp2 <- sweep(dp, MARGIN=2, FUN = "-", quants[2,])
+dp[dp2 > 0] <- NA
+
+dp[dp < 4] <- NA
+```
+
+
+Update the vcfR object with the censored data.
+
+
+```{r}
+vcf@gt[,-1][ is.na(dp) == TRUE ] <- NA
+```
+
+
+We'll want to see how this has affected teh missingness of our vcfR object.
+
+```{r}
+vcf
+```
+
+
+We'll want to mitigate variants with a high degree of missingness.
+
+
+```{r}
+dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+
+miss <- apply(dp, MARGIN=1, function(x){sum(is.na(x))})
+miss <- miss/ncol(dp)
+```
+
+
+Plot a histogram.
+
+
+```{r, fig.align='center'}
+hist(miss, col=8)
+```
+
+
+Omit variants with a high degree of missingness.
+
+
+```{r}
+#vcf <- vcf[miss < 0.05,]
+vcf <- vcf[miss < 0.02,]
+vcf
+```
+
+

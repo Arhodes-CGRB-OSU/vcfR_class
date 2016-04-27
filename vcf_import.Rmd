@@ -39,6 +39,13 @@ tas
 ```
 
 
+## "head" method
+
+```{r}
+head(tas)
+```
+
+
 ## VCF format data
 
 ```{r, eval=FALSE}

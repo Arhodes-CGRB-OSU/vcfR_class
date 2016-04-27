@@ -49,7 +49,7 @@ Once we have extracted the quantile information we can use apply and quantile to
 
 
 ```{r}
-quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.9), na.rm=TRUE)
+quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.8), na.rm=TRUE)
 quants[,1:17]
 ```
 
@@ -98,7 +98,7 @@ Plot a histogram.
 
 
 ```{r, fig.align='center'}
-hist(miss, col=8)
+hist(miss, col=8, breaks=seq(0,1,by=0.02))
 ```
 
 
@@ -107,8 +107,29 @@ Omit variants with a high degree of missingness.
 
 ```{r}
 #vcf <- vcf[miss < 0.05,]
-vcf <- vcf[miss < 0.02,]
+vcf <- vcf[miss < 0.1,]
 vcf
 ```
 
+
+
+```{r, fig.align='center', fig.width=12, fig.height=12}
+dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
+heatmap.bp(dp[1:1000,], rlabels = FALSE)
+```
+
+
+```{r, fig.align='center', fig.width=12}
+boxplot(dp, col=2:8, las=3)
+```
+
+
+
+
+## Output to file
+
+
+```{r, eval=FALSE}
+write.vcf(tas, 'TASSEL_GBS0077_dp_filtered.vcf.gz')
+```
 

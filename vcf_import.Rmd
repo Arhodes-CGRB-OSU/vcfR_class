@@ -1,0 +1,188 @@
+---
+title: "VCF import and manipulation"
+author: "Brian J. Knaus"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+The output from most common variant callers includes the VCF format.
+Here we use the R package vcfR to import and manipulate VCF data.
+
+
+## Availabilty
+
+The package vcfR is available on CRAN and GitHub.
+
+CRAN: [vcfR](http://cran.r-project.org/package=vcfR)
+
+GitHub: [vcfR](https://github.com/knausb/vcfR)
+
+
+## Data import
+
+VCF format data (either gzipped or not) can be imported into R using the `read.vcfR()` function.
+
+
+```{r, results='hide'}
+library(vcfR)
+tas <- read.vcfR("./data/TASSEL_GBS0077.vcf.gz")
+```
+
+
+## "show" method
+
+The show method can be used to provide a quick summary of the VCF data.
+
+```{r}
+tas
+```
+
+
+## VCF format data
+
+```{r, eval=FALSE}
+vignette("vcf_data", package='vcfR')
+```
+
+
+
+## Objects of class vcfR
+
+
+**meta**
+
+
+```{r}
+tas@meta[1:4]
+```
+
+
+**fix**
+
+
+```{r}
+tas@fix[1:4,1:8]
+```
+
+
+**gt**
+
+
+```{r}
+tas@gt[1:4,1:3]
+```
+
+
+## extract.gt()
+
+
+Because the data in the 'gt' section is not strictly tabular, we need a tool to parse the information we need.
+The function `extract.gt()` is meant to perform this task.
+
+
+```{r}
+dp <- extract.gt(tas, element="DP", as.numeric = TRUE)
+dp[1:4,1:8]
+```
+
+
+## Variant coverage
+
+
+```{r, fig.width=12, fig.align='center'}
+boxplot(dp[,1:20], las=3, col=2:8)
+```
+
+
+
+## heatmap.bp()
+
+
+```{r, fig.align='center', fig.width=12, fig.height=12}
+heatmap.bp(dp[1:1000,], rlabels=FALSE)
+```
+
+
+## apply()
+
+
+See seperate document.
+
+
+## Missingness
+
+
+```{r, fig.align='center', fig.width=12}
+miss <- apply(dp, MARGIN=2, function(x){sum(is.na(x))})
+
+par(mar=c(10,4,4,2))
+barplot(miss, las=3)
+par(mar=c(5,4,4,2))
+```
+
+
+
+```{r, fig.align='center', fig.width=8}
+miss <- miss/nrow(dp)
+hist(miss, col=8, breaks=seq(from=0,to=1,by=0.1))
+```
+
+
+
+## Filter samples on missingness
+
+
+
+```{r}
+tas <- tas[,c(TRUE, miss < 0.4)]
+tas
+```
+
+
+
+## Repeat for variants
+
+
+```{r}
+dp <- extract.gt(tas, element="DP", as.numeric = TRUE)
+```
+
+
+```{r, fig.align='center', fig.width=12, fig.height=12}
+heatmap.bp(dp[1:1000,], rlabels = FALSE)
+```
+
+
+```{r, fig.align='center', fig.width=12}
+miss <- apply(dp, MARGIN=1, function(x){sum(is.na(x))})
+hist(miss, col=8, seq(0, 41, by=1))
+```
+
+
+```{r, fig.align='center', fig.width=12}
+tas <- tas[miss < 4,]
+tas
+```
+
+
+```{r}
+dp <- extract.gt(tas, element="DP", as.numeric = TRUE)
+```
+
+
+```{r, fig.align='center', fig.width=12, fig.height=12}
+heatmap.bp(dp[1:1000,], rlabels=FALSE)
+```
+
+
+
+
+
+
+## Output to file
+
+
+```{r, eval=FALSE}
+write.vcf(tas, 'TASSEL_GBS0077_filtered.vcf.gz')
+```

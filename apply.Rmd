@@ -60,3 +60,50 @@ apply(tmp, MARGIN=1, myMean)
 
 
 Through defining our own functions we can extract all sorts of summaries from data in a fairly efficient manner.
+
+
+*****
+
+## Homework
+
+
+A large part of quality control of data sets is finding and mitigating missing data.
+Here I'll create a larger toy data set and add some missing data.
+As homework, create a custom function that will help you identify missing data.
+
+
+```{r}
+toy <- matrix(ncol=10, nrow=12)
+set.seed(999)
+toy[] <- rnorm(length(toy))
+
+colnames(toy) <- paste("sample", 1:ncol(toy), sep="_")
+rownames(toy) <- paste("variant", 1:nrow(toy), sep="_")
+
+set.seed(999)
+is.na(toy[round(runif(n=30, min=1, max=length(toy)))]) <- TRUE
+toy
+```
+
+
+Now we create a custom function to process our matrix.
+
+
+```{r}
+my_fun <- function(x){
+  length(x)
+}
+```
+
+
+Lastly, we use apply to iterate the function over the matrix.
+
+
+```{r}
+apply(toy, MARGIN=1, my_fun)
+```
+
+
+Can you modify the function `my_fun()` so that it counts missing data in each sample and variant?
+
+

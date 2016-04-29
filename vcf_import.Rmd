@@ -2,7 +2,9 @@
 title: "VCF import and manipulation"
 author: "Brian J. Knaus"
 date: "`r Sys.Date()`"
-output: html_document
+output: 
+  html_document:
+    toc: true
 ---
 
 
@@ -30,16 +32,27 @@ tas <- read.vcfR("./data/TASSEL_GBS0077.vcf.gz")
 ```
 
 
-## "show" method
+## 'show' method
 
-The show method can be used to provide a quick summary of the VCF data.
+Many R objects have a common set of methods defined for them so that a familiar interface can be provided.
+Examples of these common methods include 'show' and 'head.'
+Here we demonstrate these methods.
+
+
+The 'show' method can be used to provide a quick summary of the VCF data.
 
 ```{r}
 tas
 ```
 
 
-## "head" method
+## 'head' method
+
+The 'head' method provides a little more information about what is in an object.
+It typically shows the first few rows of data.
+As we'll learn below, the vcfR object consists of three slots.
+The head method for vcfR objects prints the first few rows of each of these three slots.
+
 
 ```{r}
 head(tas)
@@ -47,6 +60,10 @@ head(tas)
 
 
 ## VCF format data
+
+
+More information about VCF format data can be found in a vignette (a form of documentation) included in the vcfR package.
+
 
 ```{r, eval=FALSE}
 vignette("vcf_data", package='vcfR')
@@ -56,8 +73,13 @@ vignette("vcf_data", package='vcfR')
 
 ## Objects of class vcfR
 
+The data contained within a VCF format file can be see as having three regions: the meta region, the fix region and the gt region.
+
+
 
 **meta**
+
+The meta region contains the definition of acronyms for data contained elsewhere in the file.
 
 
 ```{r}
@@ -67,6 +89,8 @@ tas@meta[1:4]
 
 **fix**
 
+The fix region contains information that is fixed among samples over all variants.
+
 
 ```{r}
 tas@fix[1:4,1:8]
@@ -75,9 +99,18 @@ tas@fix[1:4,1:8]
 
 **gt**
 
+The gt region contains the genotypes and associated information.
 
 ```{r}
 tas@gt[1:4,1:3]
+```
+
+
+If you want to know what an element of the gt section means you can query the meta section for its definition.
+
+
+```{r, tidy=TRUE}
+grep("AD", tas@meta, value=TRUE)
 ```
 
 
@@ -94,16 +127,30 @@ dp[1:4,1:8]
 ```
 
 
-## Variant coverage
+## Visualizing data
+
+
+Data produced by GBS experiments is typically more than one can fit on a monitor.
+We can typically summarize or subset the data.
+
+### boxplot()
+
+
+Box and whisker plots summarize large quantities of data as well as identify putative outliers.
+Another nice feature of the function `boxplot()` is that it works directly on matrices.
 
 
 ```{r, fig.width=12, fig.align='center'}
-boxplot(dp[,1:20], las=3, col=2:8)
+boxplot(dp[,1:20], las=3, col=2:8, log="")
 ```
 
 
+### heatmap.bp()
 
-## heatmap.bp()
+
+Heatmaps are another good way of looking at data. I like to remind people that you can't really visualize more data then your monitor has pixels.
+You can determine your screen resolution with this [link](http://www.screenresolution.org/).
+Once your data exceeds the number of pixels on your monitor something needs to 'handle' things behind the scenes (e.g., interpolation).
 
 
 ```{r, fig.align='center', fig.width=12, fig.height=12}
@@ -114,10 +161,15 @@ heatmap.bp(dp[1:1000,], rlabels=FALSE)
 ## apply()
 
 
-See seperate document.
+Drawing out summaries from matrices is a fairly typical process.
+In R this can be facilitated with the `apply()` function.
+See seperate document for details.
 
 
 ## Missingness
+
+As we saw above, GBS experiments typically have a high degree of missingness of data.
+One of our goals as data analysts is to engineer methods to mitigate this missingness.
 
 
 ```{r, fig.align='center', fig.width=12}
@@ -129,16 +181,26 @@ par(mar=c(5,4,4,2))
 ```
 
 
+Using a barplot allows us to associate the sample information with the summary.
+Sometimes we may be more interested in how the data look independently of their sample ID.
+Histograms are good solutions for this task.
+
 
 ```{r, fig.align='center', fig.width=8}
 miss <- miss/nrow(dp)
 hist(miss, col=8, breaks=seq(from=0,to=1,by=0.1))
 ```
 
+We can see that a threshold for filtering of 0.3 may be effective at reducing the missingness of the data set.
+We can also see that a threshold of 0.3 is just as effective as a threshold of 0.4, 0.5, 0.6 or 0.7.
+
 
 
 ## Filter samples on missingness
 
+
+The square brackets are another common method for R objects, similar to 'show' and 'head' that were discussed above.
+Here we can use the square brackets to subset the data in an attemtpt to retain the relatively high quality fraction.
 
 
 ```{r}
@@ -149,6 +211,12 @@ tas
 
 
 ## Repeat for variants
+
+Samples are relatively valuable in most GBS experiments.
+For example, we only had 61 samples to start with.
+We can't afford to throw many of these away.
+However, we have plently of variants.
+At over 69 thousand variants we can afford to be picky about which variants we retain.
 
 
 ```{r}
@@ -167,6 +235,11 @@ hist(miss, col=8, seq(0, 41, by=1))
 ```
 
 
+A histogram allows us to visualize the distribution of missingness among our variants.
+We see that many of our variants have a high incidence of data.
+A threshold of 4 missing genotypes per variant appears to be a reasonable threshold.
+
+
 ```{r, fig.align='center', fig.width=12}
 tas <- tas[miss < 4,]
 tas
@@ -182,14 +255,19 @@ dp <- extract.gt(tas, element="DP", as.numeric = TRUE)
 heatmap.bp(dp[1:1000,], rlabels=FALSE)
 ```
 
-
-
-
+We can see that the degree of missingness in our data set has greatly reduced relative to the raw data set.
 
 
 ## Output to file
 
 
+Once we are happy with our data we'll want to move on to other forms of analysis.
+A fairly straight forward path is to output to a VCF format file (gzipped).
+We can use `write.vcf()` to create a file that any software designed to work on VCF files should be able to use.
+
+
 ```{r, eval=FALSE}
 write.vcf(tas, 'TASSEL_GBS0077_filtered.vcf.gz')
 ```
+
+

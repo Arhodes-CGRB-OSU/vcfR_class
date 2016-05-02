@@ -45,11 +45,19 @@ dp <- extract.gt(vcf, element = "DP", as.numeric=TRUE)
 ```
 
 
+
+```{r, fig.align='center', fig.width=12}
+boxplot(dp, col=2:8, las=3)
+```
+
+
+
 Once we have extracted the quantile information we can use apply and quantile to build intervals for what we may consider acceptable coverage.
 
 
 ```{r}
 quants <- apply(dp, MARGIN=2, quantile, probs=c(0.1, 0.8), na.rm=TRUE)
+#quants <- apply(dp, MARGIN=2, quantile, probs=c(0.34, 0.68), na.rm=TRUE)
 quants[,1:17]
 ```
 
@@ -76,7 +84,7 @@ vcf@gt[,-1][ is.na(dp) == TRUE ] <- NA
 ```
 
 
-We'll want to see how this has affected teh missingness of our vcfR object.
+We'll want to see how this has affected the missingness of our vcfR object.
 
 ```{r}
 vcf

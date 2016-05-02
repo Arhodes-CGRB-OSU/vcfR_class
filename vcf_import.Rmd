@@ -119,11 +119,29 @@ grep("AD", tas@meta, value=TRUE)
 
 Because the data in the 'gt' section is not strictly tabular, we need a tool to parse the information we need.
 The function `extract.gt()` is meant to perform this task.
+Here we demonstrate how to extract the genotypes.
+We then show how we can extract the genotypes and convert them to their allelic state.
+
+
+```{r}
+gt <- extract.gt(tas)
+gt[1:4,1:4]
+gt <- extract.gt(tas, return.alleles = TRUE)
+gt[1:4,1:4]
+```
+
+
+Now that we've begun to use `extract.gt()` we can use it to extract the depth at which each variant was sequenced.
+Sequence depth provides a fairly intuitive measure of genotype quality.
+It is an example of how we can also convert the data to numeric with the function.
+Be careful with this option!
+If the data is not numeric it will still attempt to convert it to numeric data.
+This will likely result in data that is difficult to interpret.
 
 
 ```{r}
 dp <- extract.gt(tas, element="DP", as.numeric = TRUE)
-dp[1:4,1:8]
+dp[1:4,1:4]
 ```
 
 

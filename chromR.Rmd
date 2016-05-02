@@ -1,0 +1,125 @@
+---
+title: "chromR"
+author: "Brian J. Knaus"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+In previous exercises we learned how to quality filter our VCF format GBS data.
+Here we'll learn how to create chromR objects that can contain multiple forms of data.
+In this exercise we'll use our variant data combined with reference sequence data.
+
+
+First we'll import our VCF data into R.
+
+
+
+```{r, results='hide'}
+library(vcfR)
+vcf <- read.vcfR('TASSEL_GBS0077_dp_filtered.vcf.gz')
+```
+
+
+Next, we'll read in our sequence data using the `read.dna()` function from the package ape.
+
+```{r}
+library(ape)
+dna <- read.dna("data/Pr4671.fa", format="fasta")
+```
+
+
+## Data subset
+
+
+The package vcfR was designed with teh intent to work on individual chromosomes.
+Here we use the term 'chromosome' ratehr loosely.
+Depending on the state of your reference your 'chromosomes' may actually be supercontigs or contigs.
+By working on individual chromosomes it provides a natural manner to subset the large task of working on a genome into smaller tasks.
+If you're not familiar with how to subset your data to individual chromosomes I've placed some documentation at [this link](https://github.com/knausb/vcfR_docs/blob/master/vignettes/subset_data_to_1chrom.Rmd).
+
+
+First we'll explore the distribution of sequence lengths in the reference.
+
+
+```{r, fig.align='center', fig.width=10}
+hist( unlist(lapply(dna, length)), col=8 )
+names(dna)[unlist(lapply(dna, length)) > 120000]
+```
+
+
+We see that scaffold_1 is the longest scaffold.
+It is convention to sort the sequences in a reference by length with the first sequence being the longest.
+Its always good to check that this is the case with your genome.
+Now we know that scaffold_1 is a good candidate to work on and we can subset the data to this scaffold.
+
+
+```{r}
+dna <- dna['scaffold_1']
+```
+
+
+When we move to the VCF data we observe a common issue.
+
+
+```{r}
+unique(vcf@fix[,'CHROM'])[1:10]
+```
+
+
+The names of the chromosomes in the VCF data are simply a number while the data in the sequence is more descriptive.
+We can assume that the variant data from CHROM "1" corresponds with the sequence of scaffold_1.
+But its important to reckognize that these are non-identical names that we need to keep track of.
+
+```{r}
+vcf <- vcf[grep("^1$", vcf@fix[,'CHROM']),]
+```
+
+
+Now that we have subset our data to scaffold_1 we can create an object of class chromR.
+
+
+```{r}
+chrom <- create.chromR(name="scaffold_1", vcf = vcf, seq = dna)
+```
+
+
+Note that the function warns us that the names are non-identical.
+Because we've taken the time to make sure this is what we want to do we know we can safely proceed.
+If you aren't sure of this, you should review.
+
+
+```{r}
+plot(chrom)
+```
+
+
+Note that 'DP' is no longer valid due to our previous manipulations.
+
+
+I've tried to divide working with chromR objects into three phases: creation, processing and plotting.
+Creation typically is dependent on funcitons and objects I did not create.
+An example is our use of a DNAbin object created by `read.dna()`.
+Because I did not create these functions or objects, there is little I can do about them if they do not perform as I would like.
+Processing of a chromR object includes a sliding window analysis of GC content as well as summarizing variant incidence.
+The functions that are a part of processing a chromR object are mostly my own.
+This means I have some control as to how they perform.
+Plotting of a chromR object depends largely on the base R graphics system, and we ask a lot of it.
+Again, because this is not my code, I have little control over how it performs.
+
+
+
+Now that we have created our chromR object, we can process it.
+
+
+```{r}
+chrom <- proc.chromR(chrom, win.size = 1e3)
+```
+
+
+```{r}
+chromoqc(chrom)
+```
+
+
+

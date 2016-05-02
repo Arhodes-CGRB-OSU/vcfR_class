@@ -14,7 +14,12 @@ Expect to update these materials on the day of class.
 
 1. Importing VCF data into R using vcfR
 2. VCF data `vignette('vcf_data', package='vcfR')`
-3. 
+3. Parsing the gt region with extract.gt()
+4. Visualization of VCF data
+5. The apply() function
+6. Filtering on missingness
+7. Filtering on depth
+8. Objects of class chromR
 
 
 

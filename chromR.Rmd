@@ -6,13 +6,19 @@ output: html_document
 ---
 
 
+```{r global_options, include=FALSE}
+#knitr::opts_chunk$set(fig.width=12, fig.height=8)
+knitr::opts_chunk$set(fig.align='center')
+```
+
+
+
 In previous exercises we learned how to quality filter our VCF format GBS data.
 Here we'll learn how to create chromR objects that can contain multiple forms of data.
 In this exercise we'll use our variant data combined with reference sequence data.
 
 
 First we'll import our VCF data into R.
-
 
 
 ```{r, results='hide'}
@@ -33,13 +39,33 @@ dna <- read.dna("data/Pr4671.fa", format="fasta")
 
 
 The package vcfR was designed with teh intent to work on individual chromosomes.
-Here we use the term 'chromosome' ratehr loosely.
+Here we use the term 'chromosome' rather loosely.
 Depending on the state of your reference your 'chromosomes' may actually be supercontigs or contigs.
 By working on individual chromosomes it provides a natural manner to subset the large task of working on a genome into smaller tasks.
 If you're not familiar with how to subset your data to individual chromosomes I've placed some documentation at [this link](https://github.com/knausb/vcfR_docs/blob/master/vignettes/subset_data_to_1chrom.Rmd).
 
 
-First we'll explore the distribution of sequence lengths in the reference.
+First we'll explore the distribution of sequence lengths in the reference in order to find a good chromosome to use as an example.
+Objects of class DNAbin can be stored as either matrices or lists, so we'll have to determine what we have before we extract this information.
+
+
+```{r}
+dna
+```
+
+
+The first line tells us that we have a list.
+This means we can use the function `lapply()` to query our data structure.
+For example.
+
+
+```{r}
+lapply(dna[1:4], length)
+```
+
+
+The return value of `lapply()` is a list, which is not compatible with our `hist()` function.
+We can recast our list with `unlist()` so that we can plot a histogram.
 
 
 ```{r, fig.align='center', fig.width=10}
@@ -95,6 +121,22 @@ plot(chrom)
 
 
 Note that 'DP' is no longer valid due to our previous manipulations.
+Now that we've created an object of class chromR we update this fairly easily.
+First, we'll extract the DP element from the gt region, then we'll repopulate the DP information with the rowSums from the DP matrix.
+
+
+```{r}
+dp <- extract.gt(chrom, element = "DP", as.numeric = TRUE)
+chrom@var.info$DP <- rowSums(dp, na.rm = TRUE)
+```
+
+
+Now we can validate the change.
+
+
+```{r}
+plot(chrom)
+```
 
 
 I've tried to divide working with chromR objects into three phases: creation, processing and plotting.
@@ -117,9 +159,41 @@ chrom <- proc.chromR(chrom, win.size = 1e3)
 ```
 
 
+The function `proc.chromR()` performs a sliding window analysis for variant incidence as well as GC content of the reference.
+It also calculates some summary statistics.
+For this example it performs quite well.
+As the number of samples and variants increases it will present an increased computatinoal challenge that may require either patience or a strategy to subset to data.
+
+
+Once we have an object of class chromR we can plot it with the funciton `chromoqc`.
+
+
 ```{r}
 chromoqc(chrom)
 ```
 
+
+The function `chromoqc()` is actually a wrapper to the function `chromo()`.
+The latter function allows greater flexibility in plotting options.
+It is also more complicated than `chromoqc()` which is really my attempt to guess how most users may want to parameterize `chromo()`.
+
+
+One feature that may be rather subtle is the use of the elispes (...) as an argument in the function.
+This is a way of saying 'other stuff too.'
+The function `chromoqc` calls other functions to produce the plot and these functions all have parameters as well.
+the elipses provide a way to pass parameters from `chromoqc()` to these other functions.
+A notable option is the use of `xlim()`.
+This option allows the user to focus in on a particular region of the chromosome.
+
+
+```{r}
+chromoqc(chrom, xlim=c(8e4, 10e4))
+```
+
+
+Use of chromR objects provides a way to integrate other forms of data with VCF data, such as sequence and annotation information.
+The chromR object allows us to store exta information about VCF data while preserving the original data.
+Lastly, the chromR object has plotiing capabilities to facilitate visualization of these data.
+The use of chromR objects is intended to help researchers rapidly and easily scrutinize their data in order to provide the best possible data for downstream analyses.
 
 

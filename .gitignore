@@ -5,3 +5,4 @@
 *.html
 TASSEL_GBS0077_filtered.vcf.gz
 TASSEL_GBS0077_dp_filtered.vcf.gz
+data/Pr4671.fa

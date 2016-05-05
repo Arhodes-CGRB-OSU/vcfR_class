@@ -27,6 +27,8 @@ CRAN: [vcfR](http://cran.r-project.org/package=vcfR)
 
 GitHub: [vcfR](https://github.com/knausb/vcfR)
 
+**Special version**: [vcfR](https://github.com/knausb/vcfR_win-builder)
+
 
 ## Data import
 
